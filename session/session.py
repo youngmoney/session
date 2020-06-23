@@ -1,6 +1,7 @@
 import subprocess
 import threading
 
+
 class Locked:
     def __init__(self, l):
         self.lock = l
@@ -28,6 +29,7 @@ class Session(object):
     def is_running(self):
         return False
 
+
 class PipeSession(Session):
     def __init__(self):
         self.interpreter = None
@@ -54,7 +56,7 @@ class PipeSession(Session):
 
     def _sendlines(self, lines):
         assert self.running
-        self.interpreter.stdin.writelines([l+'\n' for l in lines])
+        self.interpreter.stdin.writelines([l + "\n" for l in lines])
         self.interpreter.stdin.flush()
 
     def _readline(self):
@@ -65,7 +67,7 @@ class PipeSession(Session):
         l = ""
         while not l:
             l = self.interpreter.stdout.readline()
-        return l.rstrip('\n')
+        return l.rstrip("\n")
 
     def _read_until_ready(self):
         r = self._ready()
@@ -74,15 +76,25 @@ class PipeSession(Session):
             l = self._readline()
             if r(l):
                 return lines
-            lines.append(l.rstrip('\n'))
+            lines.append(l.rstrip("\n"))
 
     def start(self):
         with Locked(self.lock):
             assert not self.running
             try:
-                self.interpreter = subprocess.Popen(self._command(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True, universal_newlines=True)
+                self.interpreter = subprocess.Popen(
+                    self._command(),
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    close_fds=True,
+                    universal_newlines=True,
+                    text=True,
+                )
             except Exception as e:
-                raise ValueError("Error running command %s: %s" % (self.command, str(e)))
+                raise ValueError(
+                    "Error running command %s: %s" % (self.command, str(e))
+                )
             self.running = True
             self._read_until_ready()
 
@@ -112,6 +124,7 @@ class PipeSession(Session):
     def is_running(self):
         return self.running
 
+
 class BashSession(PipeSession):
     def __init__(self):
         PipeSession.__init__(self)
@@ -121,5 +134,5 @@ class BashSession(PipeSession):
 
     def _ready(self):
         end = "SESSION_END_OF_COMMAND_REACHED_READY"
-        self._sendlines(['echo '+end])
+        self._sendlines(["echo " + end])
         return lambda l: l == end

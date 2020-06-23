@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
+
 from . import client, server
 import base64
 import sys
@@ -15,7 +16,7 @@ def debug(s):
 
 def parse_and_run():
     parser = ArgumentParser(description="Execute Markdown Code Blocks")
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(title="verb", dest="verb")
 
     server_parser = subparsers.add_parser(
         "server", help="Start the server. It may be helpful to run in under (z)daemon.",
@@ -32,7 +33,10 @@ def parse_and_run():
     args = parser.parse_args()
 
     try:
-        args.func(args)
+        if "func" in args:
+            args.func(args)
+        else:
+            return False
     except Exception as e:
         print(e)
         return False
@@ -43,7 +47,7 @@ def run_server(args):
 
 
 def run_client(args):
-    session = base64.urlsafe_b64encode(args.filename)
+    session = base64.urlsafe_b64encode(args.filename.encode()).decode()
     rs = client.RemoteSession(session, "localhost", 9009)
     verb = args.verb[0]
     if verb == "execute":
